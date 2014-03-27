@@ -57,17 +57,22 @@ func (b *Buildfile) WriteHost(mapping string) {
 var base = `
 #!/bin/bash
 
+echo BUILDFILE Starting buildfile
 # drone configuration files are stored in /etc/drone.d
 # execute these files prior to our build to set global
 # environment variables and initialize programs (like rbenv)
+echo BUILDFILE Checking for /etc/drone.d
 if [ -d /etc/drone.d ]; then
+  echo BUILDFILE Found
   for i in /etc/drone.d/*.sh; do
+    echo BUILDFILE Trying to exectute $i
     if [ -r $i ]; then
       . $i
     fi
   done
   unset i
 fi
+echo BUILDFILE Done executing stuff from /etc/drone.d
 
 # be sure to exit on error and print out
 # our bash commands, so we can which commands

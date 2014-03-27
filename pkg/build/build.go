@@ -385,7 +385,9 @@ func (b *Builder) run() error {
 	}
 
 	// create the container from the image
+	log.Infof("BUILD creating docker container: %+v", conf)
 	run, err := b.dockerClient.Containers.Create(&conf)
+	log.Infof("BUILD got container/err: %+v , %+v", run, err)
 	if err != nil {
 		return err
 	}
@@ -394,29 +396,38 @@ func (b *Builder) run() error {
 	b.container = run
 
 	// attach to the container
+	log.Infof("BUILD before attaching to container")
 	go func() {
+		log.Infof("BUILD attaching to container")
 		b.dockerClient.Containers.Attach(run.ID, &writer{b.Stdout})
 	}()
 
 	// start the container
+	log.Infof("BUILD before starting the container")
 	if err := b.dockerClient.Containers.Start(run.ID, &host); err != nil {
+		log.Infof("BUILD error starting the container: %+v", err)
 		b.BuildState.ExitCode = 1
 		b.BuildState.Finished = time.Now().UTC().Unix()
 		return err
 	}
 
 	// wait for the container to stop
+	log.Infof("BUILD before waiting for the container")
 	wait, err := b.dockerClient.Containers.Wait(run.ID)
+	log.Infof("BUILD result/err of wait: %+v , %+v", wait, err)
 	if err != nil {
+		log.Infof("BUILD error waiting for the container: %+v", err)
 		b.BuildState.ExitCode = 1
 		b.BuildState.Finished = time.Now().UTC().Unix()
 		return err
 	}
 
 	// set completion time
+	log.Infof("BUILD set BuildState.Finished")
 	b.BuildState.Finished = time.Now().UTC().Unix()
 
 	// get the exit code if possible
+	log.Infof("BUILD set BuildState.ExitCode: %+v", wait.StatusCode)
 	b.BuildState.ExitCode = wait.StatusCode
 
 	return nil

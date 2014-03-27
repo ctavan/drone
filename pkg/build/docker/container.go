@@ -3,6 +3,8 @@ package docker
 import (
 	"fmt"
 	"io"
+
+	"github.com/drone/drone/pkg/build/log"
 )
 
 type ContainerService struct {
@@ -25,7 +27,9 @@ func (c *ContainerService) ListAll() ([]*Containers, error) {
 
 // Create a Container
 func (c *ContainerService) Create(conf *Config) (*Run, error) {
+	log.Infof("DOCKER_CONTAINER creating docker container with config: %+v", conf)
 	run, err := c.create(conf)
+	log.Infof("DOCKER_CONTAINER created: %+v , %+v", run, err)
 	switch {
 	// if no error, exit immediately
 	case err == nil:
@@ -38,11 +42,13 @@ func (c *ContainerService) Create(conf *Config) (*Run, error) {
 		return nil, err
 	}
 
+	log.Infof("DOCKER_CONTAINER try to pull image: %+v", conf.Image)
 	// attempt to pull the image
 	if err := c.Images.Pull(conf.Image); err != nil {
 		return nil, err
 	}
 
+	log.Infof("DOCKER_CONTAINER try to re-create: %+v", conf)
 	// now that we have the image, re-try creation
 	return c.create(conf)
 }
@@ -70,8 +76,11 @@ func (c *ContainerService) Remove(id string) error {
 
 // Block until container id stops, then returns the exit code
 func (c *ContainerService) Wait(id string) (*Wait, error) {
+	log.Infof("DOCKER_CONTAINER wait for: %+v", id)
 	wait := Wait{}
+	log.Infof("DOCKER_CONTAINER posting wait %+v to %+v", wait, fmt.Sprintf("/containers/%s/wait", id))
 	err := c.do("POST", fmt.Sprintf("/containers/%s/wait", id), nil, &wait)
+	log.Infof("DOCKER_CONTAINER done with post: %+v , %+v", wait, err)
 	return &wait, err
 }
 
